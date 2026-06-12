@@ -418,6 +418,38 @@ function renderOdds() {
   document.getElementById("main-content").innerHTML = html;
 }
 
+
+// ---- Real Odds Fetcher ----
+var ODDS_DATA_URL = "https://huaz226126-hash.github.io/worldcup-2026/odds-data.json";
+var realOddsCache = null;
+async function fetchRealOdds() {
+  try {
+    var res = await fetch(ODDS_DATA_URL + "?t=" + Date.now());
+    if (!res.ok) return false;
+    var data = await res.json();
+    if (data && data.matches && data.matches.length > 0 && data.matches[0].homeOdds > 0) {
+      realOddsCache = data;
+      return true;
+    }
+    return false;
+  } catch(e) { return false; }
+}
+function matchTeamName(cnName) {
+  var map = {"巴西":"Brazil","阿根廷":"Argentina","德国":"Germany","法国":"France",
+    "英格兰":"England","西班牙":"Spain","葡萄牙":"Portugal","荷兰":"Netherlands",
+    "比利时":"Belgium","意大利":"Italy","乌拉圭":"Uruguay","墨西哥":"Mexico",
+    "克罗地亚":"Croatia","丹麦":"Denmark","瑞士":"Switzerland","日本":"Japan",
+    "韩国":"South Korea","美国":"USA","加拿大":"Canada","澳大利亚":"Australia",
+    "摩洛哥":"Morocco","塞内加尔":"Senegal","尼日利亚":"Nigeria","加纳":"Ghana",
+    "喀麦隆":"Cameroon","巴拉圭":"Paraguay","厄瓜多尔":"Ecuador","秘鲁":"Peru",
+    "哥伦比亚":"Colombia","智利":"Chile","瑞典":"Sweden","波兰":"Poland",
+    "土耳其":"Turkey","苏格兰":"Scotland","捷克":"Czech Republic","南非":"South Africa",
+    "波黑":"Bosnia-Herzegovina","海地":"Haiti","卡塔尔":"Qatar","沙特":"Saudi Arabia",
+    "科特迪瓦":"Ivory Coast","佛得角":"Cape Verde","突尼斯":"Tunisia","埃及":"Egypt",
+    "库拉索":"Curacao"};
+  return map[cnName] || cnName;
+}
+
 // ---- Squad Generator ----
 function generateSquad(team, strength) {
   var positions = [];
