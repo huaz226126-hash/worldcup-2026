@@ -3,7 +3,7 @@ async function loadAllData() {
   // Try cached data from GitHub first (no external API)
   try {
     var cachedUrl = "https://huaz226126-hash.github.io/worldcup-2026/cached-data.json?t=" + Date.now();
-    var cachedRes = await fetch(cachedUrl);
+    var cachedRes = await timeoutFetch(cachedUrl, 5000);
     if (cachedRes.ok) {
       var cached = await cachedRes.json();
       if (cached && cached.matches && cached.matches.length > 0) {
