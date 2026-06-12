@@ -234,3 +234,6 @@ footer p { font-size: 10px; color: var(--text-dim); }
 .rec-home { background: rgba(68,138,255,0.15); color: #448aff; }
 .rec-draw { background: rgba(136,146,164,0.15); color: #8892a4; }
 .rec-away { background: rgba(240,192,64,0.15); color: #f0c040; }
+
+/* Team Chinese name */
+.team-cn { font-size:10px; color:#8892a4; font-weight:400; display:block; }
