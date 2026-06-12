@@ -1,33 +1,41 @@
-async function fetchJSON(url) {
-  var controller = new AbortController();
-  var timer = setTimeout(function() { controller.abort(); }, 8000);
-  try {
-    var res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    return res.json();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-a
-function timeoutPromise(ms) {
-  return new Promise(function(r) { setTimeout(function() { r(null); }, ms); });
-}
-
-sync function loadAllData() {
+async function loadAllData() {
   if (matchesCache.length > 0) return;
-  const data = await fetchJSON(SPORTSDB + "/eventsseason.php?id=" + LEAGUE_ID + "&s=" + SEASON);
-  matchesCache = data.events || [];
-  const teamIds = new Set();
-  for (const m of matchesCache) {
+  // Try cached data from GitHub first (no external API)
+  try {
+    var cachedUrl = "https://huaz226126-hash.github.io/worldcup-2026/cached-data.json?t=" + Date.now();
+    var cachedRes = await fetch(cachedUrl);
+    if (cachedRes.ok) {
+      var cached = await cachedRes.json();
+      if (cached && cached.matches && cached.matches.length > 0) {
+        matchesCache = cached.matches;
+        if (cached.teams) teamsCache = cached.teams;
+        return;
+      }
+    }
+  } catch(e) {}
+  
+  try {
+    var data = await fetchJSON(SPORTSDB + "/eventsseason.php?id=" + LEAGUE_ID + "\u0026s=" + SEASON, 10000);
+    matchesCache = data.events || [];
+  } catch(e) {
+    matchesCache = [];
+    return;
+  }
+  if (matchesCache.length === 0) return;
+  var teamIds = new Set();
+  for (var i = 0; i < matchesCache.length; i++) {
+    var m = matchesCache[i];
     if (m.idHomeTeam) teamIds.add(m.idHomeTeam);
     if (m.idAwayTeam) teamIds.add(m.idAwayTeam);
   }
-  const batch = [];
-  for (const id of teamIds) {
-        batch.push(Promise.race([fetchJSON(SPORTSDB + "/lookupteam.php?id=" + id).then(function(d) { try { if (d && d.teams && d.teams[0]) teamsCache[id] = d.teams[0]; } catch(e) {} }).catch(function(e) {}), timeoutPromise(6000)]));
-    }));
+  var batch = [];
+  for (var id of teamIds) {
+    batch.push(Promise.race([
+      fetchJSON(SPORTSDB + "/lookupteam.php?id=" + id, 6000).then(function(d) {
+        try { if (d && d.teams && d.teams[0]) teamsCache[id] = d.teams[0]; } catch(e) {}
+      }).catch(function(e) {}),
+      timeoutPromise(6000)
+    ]));
   }
   await Promise.all(batch.map(function(p) { return p.catch(function(e) { return null; }); }));
 }
