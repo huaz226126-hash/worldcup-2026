@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
     tab.classList.add("active");
     currentTab = tab.dataset.tab;
     loadTab(currentTab);
-  });
+  } catch(e) {} });
   loadTab("matches");
   setInterval(function() { loadTab(currentTab); }, 300000);
 });
