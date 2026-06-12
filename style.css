@@ -214,3 +214,23 @@ footer p { font-size: 10px; color: var(--text-dim); }
   margin-top: 6px; padding: 8px; background: rgba(255,255,255,0.02);
   border-radius: 6px;
 }
+
+/* Odds Explainer */
+.odds-explainer {
+  background: rgba(240,192,64,0.06);
+  border: 1px solid rgba(240,192,64,0.12);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.odds-explainer p { font-size: 12px; color: #8892a4; margin-bottom: 8px; }
+.odds-example { display: flex; gap: 6px; }
+.odds-example span { flex: 1; text-align: center; padding: 4px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.ex-home { background: rgba(68,138,255,0.12); color: #448aff; }
+.ex-draw { background: rgba(136,146,164,0.12); color: #8892a4; }
+.ex-away { background: rgba(240,192,64,0.12); color: #f0c040; }
+.odds-pct { font-size: 10px; color: #8892a4; font-weight: 400; }
+.odds-rec { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.rec-home { background: rgba(68,138,255,0.15); color: #448aff; }
+.rec-draw { background: rgba(136,146,164,0.15); color: #8892a4; }
+.rec-away { background: rgba(240,192,64,0.15); color: #f0c040; }
