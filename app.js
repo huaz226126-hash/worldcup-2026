@@ -24,7 +24,12 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-async function loadAllData() {
+a
+function timeoutPromise(ms) {
+  return new Promise(function(r) { setTimeout(function() { r(null); }, ms); });
+}
+
+sync function loadAllData() {
   if (matchesCache.length > 0) return;
   const data = await fetchJSON(SPORTSDB + "/eventsseason.php?id=" + LEAGUE_ID + "&s=" + SEASON);
   matchesCache = data.events || [];
@@ -35,11 +40,10 @@ async function loadAllData() {
   }
   const batch = [];
   for (const id of teamIds) {
-    batch.push(fetchJSON(SPORTSDB + "/lookupteam.php?id=" + id).then(d => {
-      if (d.teams && d.teams[0]) teamsCache[id] = d.teams[0];
+        batch.push(Promise.race([fetchJSON(SPORTSDB + "/lookupteam.php?id=" + id).then(function(d) { try { if (d && d.teams && d.teams[0]) teamsCache[id] = d.teams[0]; } catch(e) {} }).catch(function(e) {}), timeoutPromise(6000)]));
     }));
   }
-  await Promise.all(batch);
+  await Promise.all(batch.map(function(p) { return p.catch(function(e) { return null; }); }));
 }
 
 function showLoading() {
