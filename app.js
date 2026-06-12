@@ -1,27 +1,13 @@
-﻿const SPORTSDB = "https://www.thesportsdb.com/api/v1/json/3";
-const LEAGUE_ID = "4429";
-const SEASON = "2026";
-let currentTab = "matches";
-let matchesCache = [];
-let teamsCache = {};
-
-document.addEventListener("DOMContentLoaded", function() {
-  document.getElementById("tabs").addEventListener("click", function(e) {
-    const tab = e.target.closest(".tab");
-    if (!tab) return;
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-    currentTab = tab.dataset.tab;
-    loadTab(currentTab);
-  } catch(e) {} });
-  loadTab("matches");
-  setInterval(function() { loadTab(currentTab); }, 300000);
-});
-
 async function fetchJSON(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
+  var controller = new AbortController();
+  var timer = setTimeout(function() { controller.abort(); }, 8000);
+  try {
+    var res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 a
