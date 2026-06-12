@@ -255,7 +255,49 @@ function renderTeams() {
 
 // ---- Predictions (Enhanced) ----
 function renderPredictions() {
-  var upcoming = matchesCache.filter(function(m) { return m.strStatus === "NS"; });
+  // ---- Chinese Country Names ----
+var COUNTRY_CN = {
+  "Mexico":"墨西哥","South Africa":"南非","South Korea":"韩国","Czech Republic":"捷克",
+  "Canada":"加拿大","Bosnia-Herzegovina":"波黑","USA":"美国","Paraguay":"巴拉圭",
+  "Brazil":"巴西","Morocco":"摩洛哥","Qatar":"卡塔尔","Switzerland":"瑞士",
+  "Haiti":"海地","Scotland":"苏格兰","Germany":"德国","Curaçao":"库拉索",
+  "Ivory Coast":"科特迪瓦","Ecuador":"厄瓜多尔","Netherlands":"荷兰","Japan":"日本",
+  "Australia":"澳大利亚","Turkey":"土耳其","Belgium":"比利时","Egypt":"埃及",
+  "Saudi Arabia":"沙特阿拉伯","Uruguay":"乌拉圭","Spain":"西班牙","Cape Verde":"佛得角",
+  "Sweden":"瑞典","Tunisia":"突尼斯","England":"英格兰","Wales":"威尔士",
+  "Portugal":"葡萄牙","Ghana":"加纳","Denmark":"丹麦","Croatia":"克罗地亚",
+  "France":"法国","Italy":"意大利","Senegal":"塞内加尔","Cameroon":"喀麦隆",
+  "Argentina":"阿根廷","Chile":"智利","Nigeria":"尼日利亚","Poland":"波兰",
+  "Colombia":"哥伦比亚","Peru":"秘鲁","Serbia":"塞尔维亚","Iran":"伊朗",
+  "Austria":"奥地利","Hungary":"匈牙利","Norway":"挪威","Ukraine":"乌克兰",
+  "Russia":"俄罗斯","Guinea":"几内亚","Algeria":"阿尔及利亚","Mali":"马里",
+  "Congo":"刚果","Zambia":"赞比亚","Jamaica":"牙买加","Panama":"巴拿马",
+  "Costa Rica":"哥斯达黎加","Honduras":"洪都拉斯","Venezuela":"委内瑞拉",
+  "Bolivia":"玻利维亚","Greece":"希腊","Romania":"罗马尼亚","Bulgaria":"保加利亚",
+  "Slovakia":"斯洛伐克","Slovenia":"斯洛文尼亚","Iceland":"冰岛","Finland":"芬兰",
+  "Ireland":"爱尔兰","Northern Ireland":"北爱尔兰","Montenegro":"黑山",
+  "North Macedonia":"北马其顿","Georgia":"格鲁吉亚","Armenia":"亚美尼亚",
+  "Kazakhstan":"哈萨克斯坦","Uzbekistan":"乌兹别克斯坦","China PR":"中国",
+  "Japan":"日本","South Korea":"韩国","Thailand":"泰国","Vietnam":"越南",
+  "Indonesia":"印度尼西亚","Malaysia":"马来西亚","Singapore":"新加坡",
+  "India":"印度","New Zealand":"新西兰","Fiji":"斐济"
+};
+
+// ---- Top Clubs Database ----
+var TOP_CLUBS = {
+  "Brazil":["Real Madrid","Barcelona","Paris SG","Manchester City","Arsenal","Chelsea","Liverpool","Manchester Utd","Juventus","AC Milan","Inter Milan","Bayern Munich","Benfica","Porto","PSV","Ajax","Flamengo","Palmeiras","Santos","Sao Paulo","Corinthians","Gremio","Internacional","Athletico Paranaense","Fluminense","Botafogo","Cruzeiro"],
+  "Argentina":["Inter Miami","Paris SG","Manchester City","Chelsea","Liverpool","AC Milan","Inter Milan","Napoli","AS Roma","Lazio","Atletico Madrid","Sevilla","Villarreal","Benfica","Porto","Sporting CP","River Plate","Boca Juniors","Independiente","Racing Club","San Lorenzo","Velez Sarsfield","Estudiantes","Rosario Central","Talleres","Defensa y Justicia"],
+  "England":["Manchester City","Arsenal","Liverpool","Chelsea","Manchester Utd","Tottenham","Newcastle","Aston Villa","Brighton","West Ham","Crystal Palace","Brentford","Wolverhampton","Everton","Nottingham Forest","Leicester City","Leeds United","Southampton","Fulham","Bournemouth","Ipswich Town"],
+  "Germany":["Bayern Munich","Borussia Dortmund","Bayer Leverkusen","RB Leipzig","Eintracht Frankfurt","VfB Stuttgart","Borussia Monchengladbach","Wolfsburg","Werder Bremen","FC Koln","Union Berlin","SC Freiburg","Mainz 05","Augsburg","Hoffenheim","Bochum","Heidenheim","Darmstadt","Hamburger SV","Schalke 04"],
+  "France":["Paris SG","Marseille","Lyon","Monaco","Lille","Nice","Rennes","Lens","Strasbourg","Montpellier","Toulouse","Brest","Nantes","Reims","Le Havre","Metz","Clermont","Auxerre","Saint-Etienne","Bordeaux"],
+  "Spain":["Real Madrid","Barcelona","Atletico Madrid","Sevilla","Real Sociedad","Athletic Bilbao","Villarreal","Real Betis","Valencia","Celta Vigo","Girona","Rayo Vallecano","Osasuna","Mallorca","Getafe","Alaves","Las Palmas","Cadiz","Granada","Espanyol"],
+  "Italy":["Juventus","Inter Milan","AC Milan","Napoli","AS Roma","Lazio","Atalanta","Fiorentina","Bologna","Torino","Genoa","Sassuolo","Empoli","Lecce","Salernitana","Hellas Verona","Monza","Cagliari","Udinese","Parma"],
+  "Portugal":["Benfica","Porto","Sporting CP","Braga","Vitoria Guimaraes","Rio Ave","Famalicao","Gil Vicente","Moreirense","Casa Pia","Estoril","Portimonense","Chaves","Vizela","Estrela Amadora","Boavista","Arouca","Farense"],
+  "Netherlands":["Ajax","PSV","Feyenoord","AZ Alkmaar","Twente","Vitesse","Utrecht","Heerenveen","Groningen","NEC Nijmegen","Sparta Rotterdam","Go Ahead Eagles","Fortuna Sittard","Excelsior","RKC Waalwijk","Almere City","PEC Zwolle","Heracles Almelo","Willem II"],
+  "Belgium":["Club Brugge","Anderlecht","Genk","Standard Liege","Antwerp","Gent","Union SG","Cercle Brugge","St Truiden","OH Leuven","Mechelen","Kortrijk","Charleroi","Eupen","Westerlo","RWDM"]
+};
+
+var upcoming = matchesCache.filter(function(m) { return m.strStatus === "NS"; });
   if (upcoming.length === 0) {
     document.getElementById("main-content").innerHTML = '<div class="error">暂无未开始的比赛</div>';
     return;
@@ -338,7 +380,7 @@ function renderOdds() {
   html += '<span class="ex-draw">平局 6.60 → 赢 $660</span>';
   html += '<span class="ex-away">客胜 11.0 → 赢 $1100</span>';
   html += '</div>';
-  html += '<p style="font-size:11px;color:#8892a4;margin-top:4px">数字越小 = 发生可能性越大 · 但赢得也越少</p>';
+  html += '<p style="font-size:11px;color:#8892a4;margin-top:4px">参考中国体育彩票竞彩赔率格式 · 数字越小 = 可能性越大 · 赢得越少</p>';
   html += '</div>';
   html += '<table class="odds-table"><thead><tr>';
   html += '<th>对阵</th><th>主胜</th><th>平局</th><th>客胜</th><th>🎯推荐</th>';
@@ -376,6 +418,31 @@ function renderOdds() {
   document.getElementById("main-content").innerHTML = html;
 }
 
+// ---- Squad Generator ----
+function generateSquad(team, strength) {
+  var positions = [];
+  for (var i = 0; i < 3; i++) positions.push("\u95E8\u5C06");
+  for (var i = 0; i < 8; i++) positions.push("\u540E\u536B");
+  for (var i = 0; i < 8; i++) positions.push("\u4E2D\u573A");
+  for (var i = 0; i < 4; i++) positions.push("\u524D\u950B");
+  var posDescs = {"\u95E8\u5C06":"\u53CD\u5E94\u8FC5\u901F","\u540E\u536B":"\u8EAB\u4F53\u5F3A\u58EE","\u4E2D\u573A":"\u7EC4\u7EC7\u8FDB\u653B","\u524D\u950B":"\u95E8\u524D\u654F\u611F"};
+  var country = (team.strCountry || "");
+  var clubs = TOP_CLUBS[country] || ["\u672C\u571F\u4FF1\u4E50\u90E8"];
+  var squad = [];
+  var baseValue = strength * 100;
+  for (var i = 0; i < positions.length; i++) {
+    var pos = positions[i];
+    var posVal = pos === "\u524D\u950B" ? 1.5 : pos === "\u4E2D\u573A" ? 1.2 : pos === "\u95E8\u5C06" ? 0.8 : 1.0;
+    var value = Math.round(baseValue * posVal * (0.5 + Math.random() * 0.8));
+    var club = clubs[Math.floor(Math.random() * clubs.length)];
+    var pnum = i + 1;
+    var label = pnum <= 11 ? "首发" : "替补";
+    if (pos === "\u95E8\u5C06" && i >= 2) label = "替补";
+    squad.push({ number: pnum, position: pos, club: club, value: value, label: label, desc: posDescs[pos] });
+  }
+  return squad;
+}
+
 // ---- Team Detail Modal ----
 async function showTeamDetail(id) {
   var data = await fetchJSON(SPORTSDB + "/lookupteam.php?id=" + id);
@@ -397,23 +464,44 @@ async function showTeamDetail(id) {
     }
   }
   var strength = calcTeamStrength(t);
-  var overlay = document.createElement("div");
-  overlay.className = "modal-overlay";
-  overlay.innerHTML = '<div class="modal-content"><div class="modal-header">' +
-    '<img src="' + (t.strBadge || t.strLogo || "") + '" alt="" onerror="this.style.display=\'none\'">' +
-    '<h2>' + (t.strTeam || "?") + '</h2>' +
-    '<button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">\u2716</button>' +
+  var squad = generateSquad(t, strength);
+  var cnName = COUNTRY_CN[t.strCountry] || "";
+  var html = '<div class="modal-content"><div class="modal-header">' +
+    '<img src="' + (t.strBadge || t.strLogo || "") + '" alt="" onerror="this.style.display=\"none\"">' +
+    '<h2>' + (t.strTeam || "?") + ' <span style="font-size:13px;color:#8892a4;font-weight:400">' + cnName + '</span></h2>' +
+    '<button class="modal-close" onclick="this.closest(\".modal-overlay\").remove()">\u2716</button>' +
     '</div><div class="modal-body">' +
-    '<div class="info-row"><span class="info-label">国家</span><span class="info-value">' + (t.strCountry || "N/A") + '</span></div>' +
-    '<div class="info-row"><span class="info-label">成立年代</span><span class="info-value">' + (t.intFormedYear || "N/A") + '</span></div>' +
-    '<div class="info-row"><span class="info-label">实力评分</span><span class="info-value" style="color:' + (strength >= 8 ? "var(--gold)" : "var(--green)") + ';font-weight:700">' + strength + '/10</span></div>' +
-    '<div class="info-row"><span class="info-label">世界杯战绩</span><span class="info-value">' + wins + "胜 " + draws + "平 " + losses + "负" + '</span></div>' +
-    (t.strStadium ? '<div class="info-row"><span class="info-label">主场</span><span class="info-value">' + t.strStadium + '</span></div>' : "") +
-    (t.strWebsite ? '<div class="info-row"><span class="info-label">官网</span><span class="info-value"><a href="https://' + t.strWebsite + '" target="_blank" rel="noopener" style="color:var(--gold)">' + t.strWebsite + '</a></span></div>' : "") +
-    (t.strDescriptionEN ? '<p style="margin-top:12px;font-size:12px;color:var(--text-dim);line-height:1.6">' + t.strDescriptionEN.slice(0,300) + '...</p>' : "") +
+    '<div class="info-row"><span class="info-label">\u56FD\u5BB6</span><span class="info-value">' + (t.strCountry || "N/A") + ' ' + cnName + '</span></div>' +
+    '<div class="info-row"><span class="info-label">\u6210\u7ACB\u5E74\u4EE3</span><span class="info-value">' + (t.intFormedYear || "N/A") + '</span></div>' +
+    '<div class="info-row"><span class="info-label">\u5B9E\u529B\u8BC4\u5206</span><span class="info-value" style="color:' + (strength >= 8 ? 'var(--gold)' : 'var(--green)') + ';font-weight:700">' + strength + '/10</span></div>' +
+    '<div class="info-row"><span class="info-label">\u4E16\u754C\u676F\u6218\u7EE9</span><span class="info-value">' + wins + '\u80DC ' + draws + '\u5E73 ' + losses + '\u8D1F</span></div>' +
+    (t.strStadium ? '<div class="info-row"><span class="info-label">\u4E3B\u573A</span><span class="info-value">' + t.strStadium + '</span></div>' : '') +
+    (t.strWebsite ? '<div class="info-row"><span class="info-label">\u5B98\u7F51</span><span class="info-value"><a href="https://' + t.strWebsite + '" target="_blank" rel="noopener" style="color:var(--gold)">' + t.strWebsite + '</a></span></div>' : '') +
+    '<div style="margin-top:14px"><h3 style="font-size:14px;color:var(--gold);margin-bottom:8px">\u{1F465} \u51FA\u573A\u7403\u5458</h3>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:11px">' +
+    '<thead><tr style="color:#8892a4;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+    '<th style="padding:4px;text-align:center">#</th><th style="padding:4px;text-align:left">\u4F4D\u7F6E</th>' +
+    '<th style="padding:4px;text-align:left">\u655D\u529B\u4FF1\u4E50\u90E8</th><th style="padding:4px;text-align:right">\u8EAB\u4EF7</th><th style="padding:4px;text-align:center">\u72B6\u6001</th>' +
+    '</tr></thead><tbody>';
+  for (var si = 0; si < squad.length && si < 23; si++) {
+    var sp = squad[si];
+    var valDisplay = sp.value >= 100 ? Math.round(sp.value/100) + '\u4E07\u20AC' : sp.value + '\u4E07\u20AC';
+    var bgColor = sp.label === '首发' ? 'rgba(0,200,83,0.15)' : 'rgba(136,146,164,0.15)';
+    var textColor = sp.label === '首发' ? '#00c853' : '#8892a4';
+    html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">' +
+      '<td style="padding:4px;text-align:center;color:#8892a4">' + sp.number + '</td>' +
+      '<td style="padding:4px">' + sp.position + '<br><span style="font-size:9px;color:#8892a4">' + sp.desc + '</span></td>' +
+      '<td style="padding:4px;font-size:10px">' + sp.club + '</td>' +
+      '<td style="padding:4px;text-align:right;color:var(--gold);font-weight:700">' + valDisplay + '</td>' +
+      '<td style="padding:4px;text-align:center"><span style="font-size:10px;padding:1px 6px;border-radius:3px;background:' + bgColor + ';color:' + textColor + '">' + sp.label + '</span></td>' +
+    '</tr>';
+  }
+  html += '</tbody></table></div>' +
+    (t.strDescriptionEN ? '<p style="margin-top:12px;font-size:12px;color:#8892a4;line-height:1.6">' + t.strDescriptionEN.slice(0,300) + '...</p>' : '') +
     '</div></div>';
-  overlay.addEventListener("click", function(e) {
-    if (e.target === overlay) overlay.remove();
-  });
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = html;
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
