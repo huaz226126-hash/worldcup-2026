@@ -330,12 +330,20 @@ function renderOdds() {
     document.getElementById("main-content").innerHTML = '<div class="error">暂无数据</div>';
     return;
   }
-  var html = '<div class="section-title">\u{1F4B0} \u8D2D\u4E70\u6307\u6570</div>';
-  html += '<p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">注: 指数为基于球队实力的模拟数据，仅供参考</p>';
+  var html = '<div class="section-title">💰 购买指数</div>';
+  html += '<div class="odds-explainer">';
+  html += '<p>👇 这些数字是什么意思？比如你下注 100元，猜对就拿到：</p>';
+  html += '<div class="odds-example">';
+  html += '<span class="ex-home">主能 2.44 → 赢 $244</span>';
+  html += '<span class="ex-draw">平局 6.60 → 赢 $660</span>';
+  html += '<span class="ex-away">客胜 11.0 → 赢 $1100</span>';
+  html += '</div>';
+  html += '<p style="font-size:11px;color:#8892a4;margin-top:4px">数字越小 = 发生可能性越大 · 但赢得也越少</p>';
+  html += '</div>';
   html += '<table class="odds-table"><thead><tr>';
-  html += '<th>对阵</th><th>主胜</th><th>平局</th><th>客胜</th>';
+  html += '<th>对阵</th><th>主胜</th><th>平局</th><th>客胜</th><th>🎯推荐</th>';
   html += '</tr></thead><tbody>';
-  for (var i = 0; i < upcoming.length; i++) {
+  for (var i = 0; i < upcoming.length && i < 30; i++) {
     var m = upcoming[i];
     var ht = teamsCache[m.idHomeTeam];
     var at = teamsCache[m.idAwayTeam];
@@ -345,18 +353,26 @@ function renderOdds() {
     var hOdds = (total / hs * 2).toFixed(2);
     var dOdds = (total / 2.5 * 1.5).toFixed(2);
     var aOdds = (total / as * 2).toFixed(2);
+    var best = Math.min(parseFloat(hOdds), parseFloat(dOdds), parseFloat(aOdds));
+    var rec = best === parseFloat(hOdds) ? m.strHomeTeam : best === parseFloat(dOdds) ? "平局" : m.strAwayTeam;
+    var recCls = best === parseFloat(hOdds) ? "rec-home" : best === parseFloat(dOdds) ? "rec-draw" : "rec-away";
+    var homePct = Math.round(1 / parseFloat(hOdds) * 100);
+    var drawPct = Math.round(1 / parseFloat(dOdds) * 100);
+    var awayPct = Math.round(1 / parseFloat(aOdds) * 100);
     html += '<tr>';
     html += '<td><div class="team-cell">';
     html += '<img src="' + (m.strHomeTeamBadge || "") + '" alt="" onerror="this.style.display=\'none\'">';
     html += m.strHomeTeam + ' vs ' + m.strAwayTeam;
     html += '<img src="' + (m.strAwayTeamBadge || "") + '" alt="" onerror="this.style.display=\'none\'">';
     html += '</div></td>';
-    html += '<td class="odds-value">' + hOdds + '</td>';
-    html += '<td>' + dOdds + '</td>';
-    html += '<td class="odds-value">' + aOdds + '</td>';
+    html += '<td class="odds-value">' + hOdds + '<br><span class="odds-pct">' + homePct + '%</span></td>';
+    html += '<td>' + dOdds + '<br><span class="odds-pct">' + drawPct + '%</span></td>';
+    html += '<td class="odds-value">' + aOdds + '<br><span class="odds-pct">' + awayPct + '%</span></td>';
+    html += '<td><span class="odds-rec ' + recCls + '">' + rec + '</span></td>';
     html += '</tr>';
   }
   html += '</tbody></table>';
+  html += '<p style="font-size:10px;color:#8892a4;margin-top:8px;text-align:center">模拟数据仅供参考 · % = 可能性</p>';
   document.getElementById("main-content").innerHTML = html;
 }
 
