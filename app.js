@@ -1,16 +1,11 @@
-async function loadAllData() {
-  if (matchesCache.length > 0) return;
-  // Try cached data from GitHub first (no external API)
-  try {
-    var cachedUrl = "https://huaz226126-hash.github.io/worldcup-2026/cached-data.json?t=" + Date.now();
-    var cachedRes = await timeoutFetch(cachedUrl, 5000);
-    if (cachedRes.ok) {
-      var cached = await cachedRes.json();
-      if (cached && cached.matches && cached.matches.length > 0) {
-        matchesCache = cached.matches;
-        if (cached.teams) teamsCache = cached.teams;
-        return;
-      }
+async function fetchJSON(url) {
+  var result = await Promise.race([
+    fetch(url),
+    new Promise(function(_, reject) { setTimeout(function() { reject(new Error("Timeout")); }, 8000); })
+  ]);
+  if (!result.ok) throw new Error("HTTP " + result.status);
+  return result.json();
+}
     }
   } catch(e) {}
   
