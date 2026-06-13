@@ -1,0 +1,28 @@
+name: Auto Update Predictions
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Generate predictions
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: node -e "const K=process.env.DEEPSEEK_API_KEY;const M=[{h:'Brazil',a:'Morocco'},{h:'Qatar',a:'Switzerland'},{h:'Haiti',a:'Scotland'},{h:'Germany',a:'Curacao'},{h:'Ivory Coast',a:'Ecuador'},{h:'Netherlands',a:'Japan'},{h:'Australia',a:'Turkey'},{h:'Belgium',a:'Egypt'},{h:'Saudi Arabia',a:'Uruguay'},{h:'Spain',a:'Cape Verde'},{h:'Sweden',a:'Tunisia'}];(async()=>{const p='Return a JSON array for each match: match(team vs team),score,home_prob,draw_prob,away_prob,home_odds,draw_odds,away_odds,analysis. Matches: '+M.map((m,i)=>(i+1)+'. '+m.h+' vs '+m.a).join(' | ');const r=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+K},body:JSON.stringify({model:'deepseek-chat',messages:[{role:'user',content:p}],temperature:0.3,max_tokens:4000})});const d=await r.json();let c=d.choices[0].message.content;const m=c.match(/\[\s*\{[^}]+\}[\s\S]*?\]/);if(m) c=m[0];require('fs').writeFileSync('pred.json',c);console.log('Done')})()"
+      - name: Update HTML
+        run: node -e "const D=JSON.parse(require('fs').readFileSync('pred.json','utf-8'));let H=require('fs').readFileSync('index.html','utf-8');let P='';let O='<table><thead><tr><th>主队</th><th>客队</th><th>预测比分</th><th>主胜</th><th>平局</th><th>客胜</th></tr></thead><tbody>';for(const a of D){const hp=a.match?a.match.split(' vs ')[0].trim():'';const ap=a.match?a.match.split(' vs ')[1].trim():'';P+='<div class=mc><div class=mr><span class=tb style=background:hsl'+Math.random()*360+',60%,40%>'+hp[0]+'</span><div class=mn><div>'+hp+'</div><small style=color:#f0c040>vs '+ap+'</small></div><div class=sc style=font-size:15px>'+(a.score||'0-0')+'</div></div><div class=pb style=margin-bottom:4px><div class=pbh style=width:'+(a.home_prob||50)+'%>'+(a.home_prob||50)+'%</div><div class=pbd style=width:'+(a.draw_prob||25)+'%>平'+(a.draw_prob||25)+'%</div><div class=pba style=width:'+(a.away_prob||25)+'%>'+(a.away_prob||25)+'%</div></div><div style=font-size:10px;color:#8892a4;margin-top:2px>分析：'+(a.analysis||'')+'</div></div>';O+='<tr><td>'+hp+'</td><td style=text-align:center>'+ap+'</td><td class=ov>'+(a.score||'0-0')+'</td><td class=ov>'+((a.home_odds||2)).toFixed(2)+'</td><td class=ov>'+((a.draw_odds||3)).toFixed(2)+'</td><td class=ov>'+((a.away_odds||4)).toFixed(2)+'</td></tr>'}O+='</tbody></table>';const v2=H.indexOf('id=v2');if(v2>0){const vt=H.indexOf('>',v2)+1;const vc=H.indexOf('</div>',vt);H=H.substring(0,vt)+P+H.substring(vc)}const v3=H.indexOf('id=v3');if(v3>0){const vt=H.indexOf('>',v3)+1;const vc=H.indexOf('</div>',vt);H=H.substring(0,vt)+O+H.substring(vc)}require('fs').writeFileSync('index.html',H);console.log('Updated')"
+      - name: Commit
+        run: |
+          git config user.name "AI Bot"
+          git config user.email "bot@wc.com"
+          git add index.html pred.json
+          git diff --cached --quiet || git commit -m "AI预测自动更新 $(date +%Y-%m-%d)"
+          git push
