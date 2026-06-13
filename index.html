@@ -246,6 +246,21 @@ footer p { font-size: 10px; color: var(--text-dim); }
   return result.json();
 }
   
+
+async function loadAllData() {
+  if (matchesCache.length > 0) return;
+  try {
+    var cachedUrl = "cached-data.json?t=" + Date.now();
+    var cachedRes = await timeoutFetch(cachedUrl, 5000);
+    if (cachedRes and cachedRes.ok) {
+      var cached = await cachedRes.json();
+      if (cached and cached.matches and len(cached.matches) > 0) {
+        matchesCache = cached.matches;
+        if (cached.teams) teamsCache = cached.teams;
+        return;
+      }
+    }
+  } catch(e) {}
   try {
     var data = await fetchJSON(SPORTSDB + "/eventsseason.php?id=" + LEAGUE_ID + "\u0026s=" + SEASON, 10000);
     matchesCache = data.events || [];
@@ -270,13 +285,15 @@ footer p { font-size: 10px; color: var(--text-dim); }
     ]));
   }
   await Promise.all(batch.map(function(p) { return p.catch(function(e) { return null; }); }));
+}
+
 
 function showLoading() {
-  document.getElementById("main-content").innerHTML = '<div class="loading"><div class="spinner"></div><p>鍔犺浇涓?..</p></div>';
+  document.getElementById("main-content").innerHTML = '<div class="loading"><div class="spinner"></div><p>加载中...</p></div>';
 }
 
 function showError(msg) {
-  document.getElementById("main-content").innerHTML = '<div class="error">' + msg + '<br><br><button onclick="loadTab(currentTab)" style="background:var(--gold);border:none;padding:8px 20px;border-radius:6px;color:#0a0e17;font-weight:700;cursor:pointer;">閲嶈瘯</button></div>';
+  document.getElementById("main-content").innerHTML = '<div class="error">' + msg + '<br><br><button onclick="loadTab(currentTab)" style="background:var(--gold);border:none;padding:8px 20px;border-radius:6px;color:#0a0e17;font-weight:700;cursor:pointer;">重试</button></div>';
 }
 
 async function loadTab(tab) {
@@ -290,15 +307,15 @@ async function loadTab(tab) {
       case "odds": renderOdds(); break;
     }
   } catch(e) {
-    showError("鍔犺浇澶辫触: " + e.message);
+    showError("加载失败: " + e.message);
   }
 }
 
 function getStatusLabel(m) {
   var st = m.strStatus || "NS";
-  if (st === "FT") return { label: "宸茬粨鏉?, cls: "ft" };
-  if (st === "LIVE") return { label: "杩涜涓?, cls: "live" };
-  return { label: "鏈紑濮?, cls: "ns" };
+  if (st === "FT") return { label: "已结束", cls: "ft" };
+  if (st === "LIVE") return { label: "进行中", cls: "live" };
+  return { label: "未开始", cls: "ns" };
 }
 
 // ---- Team strength calculation ----
@@ -362,34 +379,34 @@ function predictScore(homeStr, awayStr) {
 function generateAnalysis(team, opponent, homeStr, awayStr, hScore, aScore) {
   var diff = homeStr - awayStr;
   var analysis = [];
-  var hName = team ? (team.strTeam || "涓婚槦") : "涓婚槦";
-  var aName = opponent ? (opponent.strTeam || "瀹㈤槦") : "瀹㈤槦";
+  var hName = team ? (team.strTeam || "主队") : "主队";
+  var aName = opponent ? (opponent.strTeam || "客队") : "客队";
   var hCountry = team ? (team.strCountry || "") : "";
   var aCountry = opponent ? (opponent.strCountry || "") : "";
   
   // Team analysis
   if (diff > 2) {
-    analysis.push(hName + "鍘嗗彶搴曡暣娣卞帤锛屾暣浣撳疄鍔涙槑鏄惧崰浼?);
-    analysis.push(aName + "闈复寮哄ぇ鍘嬪姏锛岄渶绋冲浐闃插畧瀵绘壘鍙嶅嚮鏈轰細");
+    analysis.push(hName + "历史底蕴深厚，整体实力明显占优");
+    analysis.push(aName + "面临强大压力，需稳固防守寻找反击机会");
   } else if (diff > 0) {
-    analysis.push(hName + "瀹炲姏绋嶅崰涓婇锛屼富鍦烘皵鍔挎椇鐩?);
-    analysis.push(aName + "鍏峰涓€瀹氭姉琛¤兘鍔涳紝姣旇禌涓嶄細杞绘澗");
+    analysis.push(hName + "实力稍占上风，主场气势旺盛");
+    analysis.push(aName + "具备一定抗衡能力，比赛不会轻松");
   } else if (diff > -2) {
-    analysis.push(aName + "瀹炲姏鐣ュ己浜庡鎵嬶紝浣嗘瘮璧涘厖婊″彉鏁?);
-    analysis.push(hName + "鍧愭嫢涓诲満涔嬪埄锛屾湁鏈涘埗閫犳儕鍠?);
+    analysis.push(aName + "实力略强于对手，但比赛充满变数");
+    analysis.push(hName + "坐拥主场之利，有望制造惊喜");
   } else {
-    analysis.push(aName + "鏁翠綋瀹炲姏鏄庢樉鍗犱紭锛岃儨闈㈣緝澶?);
-    analysis.push(hName + "闇€瓒呮按骞冲彂鎸ユ墠鏈夊彲鑳芥嬁鍒?);
+    analysis.push(aName + "整体实力明显占优，胜面较大");
+    analysis.push(hName + "需超水平发挥才有可能拿分");
   }
   
   // Score analysis
   var total = hScore + aScore;
   if (total >= 4) {
-    analysis.push("棰勮灏嗘槸涓€鍦鸿繘鐞冨ぇ鎴?);
+    analysis.push("预计将是一场进球大战");
   } else if (total >= 2) {
-    analysis.push("棰勮鍙屾柟閮芥湁鏈轰細鐮撮棬");
+    analysis.push("预计双方都有机会破门");
   } else {
-    analysis.push("棰勮鍦洪潰杈冧负璋ㄦ厧锛岃繘鐞冧笉浼氬お澶?);
+    analysis.push("预计场面较为谨慎，进球不会太多");
   }
   
   // Prestige check
@@ -397,9 +414,9 @@ function generateAnalysis(team, opponent, homeStr, awayStr, hScore, aScore) {
   var hPrestige = prestigeKeys.some(function(k) { return hCountry.toLowerCase().includes(k); });
   var aPrestige = prestigeKeys.some(function(k) { return aCountry.toLowerCase().includes(k); });
   if (hPrestige && aPrestige) {
-    analysis.push("涓ゆ敮浼犵粺璞棬瀵瑰喅锛岀粡鍏镐箣鎴樺€煎緱鏈熷緟");
+    analysis.push("两支传统豪门对决，经典之战值得期待");
   } else if (hPrestige || aPrestige) {
-    analysis.push(hPrestige ? hName : aName + "浣滀负浼犵粺璞棬锛屽ぇ璧涚粡楠屼赴瀵?);
+    analysis.push(hPrestige ? hName : aName + "作为传统豪门，大赛经验丰富");
   }
   
   return analysis.join(" | ");
@@ -408,9 +425,9 @@ function generateAnalysis(team, opponent, homeStr, awayStr, hScore, aScore) {
 // ---- Confidence level ----
 function getConfidence(homeStr, awayStr) {
   var diff = Math.abs(homeStr - awayStr);
-  if (diff >= 4) return { level: "楂?, cls: "high" };
-  if (diff >= 2) return { level: "涓?, cls: "med" };
-  return { level: "浣?, cls: "low" };
+  if (diff >= 4) return { level: "高", cls: "high" };
+  if (diff >= 2) return { level: "中", cls: "med" };
+  return { level: "低", cls: "low" };
 }
 
 // ---- Matches ----
@@ -418,7 +435,7 @@ function renderMatches() {
   var groups = {};
   for (var i = 0; i < matchesCache.length; i++) {
     var m = matchesCache[i];
-    var d = m.dateEvent || "鏈煡鏃ユ湡";
+    var d = m.dateEvent || "未知日期";
     if (!groups[d]) groups[d] = [];
     groups[d].push(m);
   }
@@ -430,7 +447,7 @@ function renderMatches() {
     var date = dates[di];
     var matches = groups[date];
     var d = new Date(date);
-    var weekdays = ["鏃?,"涓€","浜?,"涓?,"鍥?,"浜?,"鍏?];
+    var weekdays = ["日","一","二","三","四","五","六"];
     var wd = weekdays[d.getDay()];
     var isToday = date === todayStr;
     var dateLabel = isToday ? "\u{1F534} \u4ECA\u5929 " + date : date + " \u5468" + wd;
@@ -462,7 +479,7 @@ function renderMatches() {
 function renderTeams() {
   var list = Object.entries(teamsCache);
   if (list.length === 0) {
-    document.getElementById("main-content").innerHTML = '<div class="error">鏆傛棤鐞冮槦鏁版嵁</div>';
+    document.getElementById("main-content").innerHTML = '<div class="error">暂无球队数据</div>';
     return;
   }
   var html = '<div class="section-title">\u{1F3C6} \u53C2\u8D5B\u7403\u961F</div><div class="teams-grid">';
@@ -486,30 +503,30 @@ function renderTeams() {
 function renderPredictions() {
   // ---- Chinese Country Names ----
 var COUNTRY_CN = {
-  "Mexico":"澧ㄨタ鍝?,"South Africa":"鍗楅潪","South Korea":"闊╁浗","Czech Republic":"鎹峰厠",
-  "Canada":"鍔犳嬁澶?,"Bosnia-Herzegovina":"娉㈤粦","USA":"缇庡浗","Paraguay":"宸存媺鍦?,
-  "Brazil":"宸磋タ","Morocco":"鎽╂礇鍝?,"Qatar":"鍗″灏?,"Switzerland":"鐟炲＋",
-  "Haiti":"娴峰湴","Scotland":"鑻忔牸鍏?,"Germany":"寰峰浗","Cura莽ao":"搴撴媺绱?,
-  "Ivory Coast":"绉戠壒杩摝","Ecuador":"鍘勭摐澶氬皵","Netherlands":"鑽峰叞","Japan":"鏃ユ湰",
-  "Australia":"婢冲ぇ鍒╀簹","Turkey":"鍦熻€冲叾","Belgium":"姣斿埄鏃?,"Egypt":"鍩冨強",
-  "Saudi Arabia":"娌欑壒闃挎媺浼?,"Uruguay":"涔屾媺鍦?,"Spain":"瑗跨彮鐗?,"Cape Verde":"浣涘緱瑙?,
-  "Sweden":"鐟炲吀","Tunisia":"绐佸凹鏂?,"England":"鑻辨牸鍏?,"Wales":"濞佸皵澹?,
-  "Portugal":"钁¤悇鐗?,"Ghana":"鍔犵撼","Denmark":"涓归害","Croatia":"鍏嬬綏鍦颁簹",
-  "France":"娉曞浗","Italy":"鎰忓ぇ鍒?,"Senegal":"濉炲唴鍔犲皵","Cameroon":"鍠€楹﹂殕",
-  "Argentina":"闃挎牴寤?,"Chile":"鏅哄埄","Nigeria":"灏兼棩鍒╀簹","Poland":"娉㈠叞",
-  "Colombia":"鍝ヤ鸡姣斾簹","Peru":"绉橀瞾","Serbia":"濉炲皵缁翠簹","Iran":"浼婃湕",
-  "Austria":"濂ュ湴鍒?,"Hungary":"鍖堢墮鍒?,"Norway":"鎸▉","Ukraine":"涔屽厠鍏?,
-  "Russia":"淇勭綏鏂?,"Guinea":"鍑犲唴浜?,"Algeria":"闃垮皵鍙婂埄浜?,"Mali":"椹噷",
-  "Congo":"鍒氭灉","Zambia":"璧炴瘮浜?,"Jamaica":"鐗欎拱鍔?,"Panama":"宸存嬁椹?,
-  "Costa Rica":"鍝ユ柉杈鹃粠鍔?,"Honduras":"娲兘鎷夋柉","Venezuela":"濮斿唴鐟炴媺",
-  "Bolivia":"鐜诲埄缁翠簹","Greece":"甯岃厞","Romania":"缃楅┈灏间簹","Bulgaria":"淇濆姞鍒╀簹",
-  "Slovakia":"鏂礇浼愬厠","Slovenia":"鏂礇鏂囧凹浜?,"Iceland":"鍐板矝","Finland":"鑺叞",
-  "Ireland":"鐖卞皵鍏?,"Northern Ireland":"鍖楃埍灏斿叞","Montenegro":"榛戝北",
-  "North Macedonia":"鍖楅┈鍏堕】","Georgia":"鏍奸瞾鍚変簹","Armenia":"浜氱編灏间簹",
-  "Kazakhstan":"鍝堣惃鍏嬫柉鍧?,"Uzbekistan":"涔屽吂鍒厠鏂潶","China PR":"涓浗",
-  "Japan":"鏃ユ湰","South Korea":"闊╁浗","Thailand":"娉板浗","Vietnam":"瓒婂崡",
-  "Indonesia":"鍗板害灏艰タ浜?,"Malaysia":"椹潵瑗夸簹","Singapore":"鏂板姞鍧?,
-  "India":"鍗板害","New Zealand":"鏂拌タ鍏?,"Fiji":"鏂愭祹"
+  "Mexico":"墨西哥","South Africa":"南非","South Korea":"韩国","Czech Republic":"捷克",
+  "Canada":"加拿大","Bosnia-Herzegovina":"波黑","USA":"美国","Paraguay":"巴拉圭",
+  "Brazil":"巴西","Morocco":"摩洛哥","Qatar":"卡塔尔","Switzerland":"瑞士",
+  "Haiti":"海地","Scotland":"苏格兰","Germany":"德国","Curaçao":"库拉索",
+  "Ivory Coast":"科特迪瓦","Ecuador":"厄瓜多尔","Netherlands":"荷兰","Japan":"日本",
+  "Australia":"澳大利亚","Turkey":"土耳其","Belgium":"比利时","Egypt":"埃及",
+  "Saudi Arabia":"沙特阿拉伯","Uruguay":"乌拉圭","Spain":"西班牙","Cape Verde":"佛得角",
+  "Sweden":"瑞典","Tunisia":"突尼斯","England":"英格兰","Wales":"威尔士",
+  "Portugal":"葡萄牙","Ghana":"加纳","Denmark":"丹麦","Croatia":"克罗地亚",
+  "France":"法国","Italy":"意大利","Senegal":"塞内加尔","Cameroon":"喀麦隆",
+  "Argentina":"阿根廷","Chile":"智利","Nigeria":"尼日利亚","Poland":"波兰",
+  "Colombia":"哥伦比亚","Peru":"秘鲁","Serbia":"塞尔维亚","Iran":"伊朗",
+  "Austria":"奥地利","Hungary":"匈牙利","Norway":"挪威","Ukraine":"乌克兰",
+  "Russia":"俄罗斯","Guinea":"几内亚","Algeria":"阿尔及利亚","Mali":"马里",
+  "Congo":"刚果","Zambia":"赞比亚","Jamaica":"牙买加","Panama":"巴拿马",
+  "Costa Rica":"哥斯达黎加","Honduras":"洪都拉斯","Venezuela":"委内瑞拉",
+  "Bolivia":"玻利维亚","Greece":"希腊","Romania":"罗马尼亚","Bulgaria":"保加利亚",
+  "Slovakia":"斯洛伐克","Slovenia":"斯洛文尼亚","Iceland":"冰岛","Finland":"芬兰",
+  "Ireland":"爱尔兰","Northern Ireland":"北爱尔兰","Montenegro":"黑山",
+  "North Macedonia":"北马其顿","Georgia":"格鲁吉亚","Armenia":"亚美尼亚",
+  "Kazakhstan":"哈萨克斯坦","Uzbekistan":"乌兹别克斯坦","China PR":"中国",
+  "Japan":"日本","South Korea":"韩国","Thailand":"泰国","Vietnam":"越南",
+  "Indonesia":"印度尼西亚","Malaysia":"马来西亚","Singapore":"新加坡",
+  "India":"印度","New Zealand":"新西兰","Fiji":"斐济"
 };
 
 // ---- Top Clubs Database ----
@@ -528,12 +545,12 @@ var TOP_CLUBS = {
 
 var upcoming = matchesCache.filter(function(m) { return m.strStatus === "NS"; });
   if (upcoming.length === 0) {
-    document.getElementById("main-content").innerHTML = '<div class="error">鏆傛棤鏈紑濮嬬殑姣旇禌</div>';
+    document.getElementById("main-content").innerHTML = '<div class="error">暂无未开始的比赛</div>';
     return;
   }
   
   var html = '<div class="section-title">\u{1F9E9} \u6BD4\u8D5B\u9884\u6D4B</div>';
-  html += '<p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">\u{1F916} AI鍒嗘瀽 + 鐞冮槦鍘嗗彶鏁版嵁 | 浠呬緵鍙傝€?/p>';
+  html += '<p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">\u{1F916} AI分析 + 球队历史数据 | 仅供参考</p>';
   
   for (var i = 0; i < upcoming.length && i < 20; i++) {
     var m = upcoming[i];
@@ -574,14 +591,14 @@ var upcoming = matchesCache.filter(function(m) { return m.strStatus === "NS"; })
     // Score prediction - big display
     html += '<div class="score-prediction">';
     html += '<span class="pred-score">' + pred.score + '</span>';
-    html += '<span class="pred-label">棰勬祴姣斿垎</span>';
-    html += '<span class="pred-conf conf-' + conf.cls + '">鍙俊搴? ' + conf.level + '</span>';
+    html += '<span class="pred-label">预测比分</span>';
+    html += '<span class="pred-conf conf-' + conf.cls + '">可信度: ' + conf.level + '</span>';
     html += '</div>';
     
     // Probability bar
     html += '<div class="prediction-bar">';
     html += '<div class="pred-bar-home" style="width:' + hProb + '%">' + hProb + '%</div>';
-    html += '<div class="pred-bar-draw" style="width:' + dProb + '%">骞?/div>';
+    html += '<div class="pred-bar-draw" style="width:' + dProb + '%">平</div>';
     html += '<div class="pred-bar-away" style="width:' + aProb + '%">' + aProb + '%</div>';
     html += '</div>';
     
@@ -598,21 +615,21 @@ var upcoming = matchesCache.filter(function(m) { return m.strStatus === "NS"; })
 function renderOdds() {
   var upcoming = matchesCache.filter(function(m) { return m.strStatus === "NS"; });
   if (upcoming.length === 0) {
-    document.getElementById("main-content").innerHTML = '<div class="error">鏆傛棤鏁版嵁</div>';
+    document.getElementById("main-content").innerHTML = '<div class="error">暂无数据</div>';
     return;
   }
-  var html = '<div class="section-title">馃挵 璐拱鎸囨暟</div>';
+  var html = '<div class="section-title">💰 购买指数</div>';
   html += '<div class="odds-explainer">';
-  html += '<p>馃憞 杩欎簺鏁板瓧鏄粈涔堟剰鎬濓紵姣斿浣犱笅娉?100鍏冿紝鐚滃灏辨嬁鍒帮細</p>';
+  html += '<p>👇 这些数字是什么意思？比如你下注 100元，猜对就拿到：</p>';
   html += '<div class="odds-example">';
-  html += '<span class="ex-home">涓昏兘 2.44 鈫?璧?$244</span>';
-  html += '<span class="ex-draw">骞冲眬 6.60 鈫?璧?$660</span>';
-  html += '<span class="ex-away">瀹㈣儨 11.0 鈫?璧?$1100</span>';
+  html += '<span class="ex-home">主能 2.44 → 赢 $244</span>';
+  html += '<span class="ex-draw">平局 6.60 → 赢 $660</span>';
+  html += '<span class="ex-away">客胜 11.0 → 赢 $1100</span>';
   html += '</div>';
-  html += '<p style="font-size:11px;color:#8892a4;margin-top:4px">鍙傝€冧腑鍥戒綋鑲插僵绁ㄧ珵褰╄禂鐜囨牸寮?路 鏁板瓧瓒婂皬 = 鍙兘鎬ц秺澶?路 璧㈠緱瓒婂皯</p>';
+  html += '<p style="font-size:11px;color:#8892a4;margin-top:4px">参考中国体育彩票竞彩赔率格式 · 数字越小 = 可能性越大 · 赢得越少</p>';
   html += '</div>';
   html += '<table class="odds-table"><thead><tr>';
-  html += '<th>瀵归樀</th><th>涓昏儨</th><th>骞冲眬</th><th>瀹㈣儨</th><th>馃幆鎺ㄨ崘</th>';
+  html += '<th>对阵</th><th>主胜</th><th>平局</th><th>客胜</th><th>🎯推荐</th>';
   html += '</tr></thead><tbody>';
   for (var i = 0; i < upcoming.length && i < 30; i++) {
     var m = upcoming[i];
@@ -625,7 +642,7 @@ function renderOdds() {
     var dOdds = (total / 2.5 * 1.5).toFixed(2);
     var aOdds = (total / as * 2).toFixed(2);
     var best = Math.min(parseFloat(hOdds), parseFloat(dOdds), parseFloat(aOdds));
-    var rec = best === parseFloat(hOdds) ? m.strHomeTeam : best === parseFloat(dOdds) ? "骞冲眬" : m.strAwayTeam;
+    var rec = best === parseFloat(hOdds) ? m.strHomeTeam : best === parseFloat(dOdds) ? "平局" : m.strAwayTeam;
     var recCls = best === parseFloat(hOdds) ? "rec-home" : best === parseFloat(dOdds) ? "rec-draw" : "rec-away";
     var homePct = Math.round(1 / parseFloat(hOdds) * 100);
     var drawPct = Math.round(1 / parseFloat(dOdds) * 100);
@@ -643,7 +660,7 @@ function renderOdds() {
     html += '</tr>';
   }
   html += '</tbody></table>';
-  html += '<p style="font-size:10px;color:#8892a4;margin-top:8px;text-align:center">妯℃嫙鏁版嵁浠呬緵鍙傝€?路 % = 鍙兘鎬?/p>';
+  html += '<p style="font-size:10px;color:#8892a4;margin-top:8px;text-align:center">模拟数据仅供参考 · % = 可能性</p>';
   document.getElementById("main-content").innerHTML = html;
 }
 
@@ -664,18 +681,18 @@ async function fetchRealOdds() {
   } catch(e) { return false; }
 }
 function matchTeamName(cnName) {
-  var map = {"宸磋タ":"Brazil","闃挎牴寤?:"Argentina","寰峰浗":"Germany","娉曞浗":"France",
-    "鑻辨牸鍏?:"England","瑗跨彮鐗?:"Spain","钁¤悇鐗?:"Portugal","鑽峰叞":"Netherlands",
-    "姣斿埄鏃?:"Belgium","鎰忓ぇ鍒?:"Italy","涔屾媺鍦?:"Uruguay","澧ㄨタ鍝?:"Mexico",
-    "鍏嬬綏鍦颁簹":"Croatia","涓归害":"Denmark","鐟炲＋":"Switzerland","鏃ユ湰":"Japan",
-    "闊╁浗":"South Korea","缇庡浗":"USA","鍔犳嬁澶?:"Canada","婢冲ぇ鍒╀簹":"Australia",
-    "鎽╂礇鍝?:"Morocco","濉炲唴鍔犲皵":"Senegal","灏兼棩鍒╀簹":"Nigeria","鍔犵撼":"Ghana",
-    "鍠€楹﹂殕":"Cameroon","宸存媺鍦?:"Paraguay","鍘勭摐澶氬皵":"Ecuador","绉橀瞾":"Peru",
-    "鍝ヤ鸡姣斾簹":"Colombia","鏅哄埄":"Chile","鐟炲吀":"Sweden","娉㈠叞":"Poland",
-    "鍦熻€冲叾":"Turkey","鑻忔牸鍏?:"Scotland","鎹峰厠":"Czech Republic","鍗楅潪":"South Africa",
-    "娉㈤粦":"Bosnia-Herzegovina","娴峰湴":"Haiti","鍗″灏?:"Qatar","娌欑壒":"Saudi Arabia",
-    "绉戠壒杩摝":"Ivory Coast","浣涘緱瑙?:"Cape Verde","绐佸凹鏂?:"Tunisia","鍩冨強":"Egypt",
-    "搴撴媺绱?:"Curacao"};
+  var map = {"巴西":"Brazil","阿根廷":"Argentina","德国":"Germany","法国":"France",
+    "英格兰":"England","西班牙":"Spain","葡萄牙":"Portugal","荷兰":"Netherlands",
+    "比利时":"Belgium","意大利":"Italy","乌拉圭":"Uruguay","墨西哥":"Mexico",
+    "克罗地亚":"Croatia","丹麦":"Denmark","瑞士":"Switzerland","日本":"Japan",
+    "韩国":"South Korea","美国":"USA","加拿大":"Canada","澳大利亚":"Australia",
+    "摩洛哥":"Morocco","塞内加尔":"Senegal","尼日利亚":"Nigeria","加纳":"Ghana",
+    "喀麦隆":"Cameroon","巴拉圭":"Paraguay","厄瓜多尔":"Ecuador","秘鲁":"Peru",
+    "哥伦比亚":"Colombia","智利":"Chile","瑞典":"Sweden","波兰":"Poland",
+    "土耳其":"Turkey","苏格兰":"Scotland","捷克":"Czech Republic","南非":"South Africa",
+    "波黑":"Bosnia-Herzegovina","海地":"Haiti","卡塔尔":"Qatar","沙特":"Saudi Arabia",
+    "科特迪瓦":"Ivory Coast","佛得角":"Cape Verde","突尼斯":"Tunisia","埃及":"Egypt",
+    "库拉索":"Curacao"};
   return map[cnName] || cnName;
 }
 
@@ -697,8 +714,8 @@ function generateSquad(team, strength) {
     var value = Math.round(baseValue * posVal * (0.5 + Math.random() * 0.8));
     var club = clubs[Math.floor(Math.random() * clubs.length)];
     var pnum = i + 1;
-    var label = pnum <= 11 ? "棣栧彂" : "鏇胯ˉ";
-    if (pos === "\u95E8\u5C06" && i >= 2) label = "鏇胯ˉ";
+    var label = pnum <= 11 ? "首发" : "替补";
+    if (pos === "\u95E8\u5C06" && i >= 2) label = "替补";
     squad.push({ number: pnum, position: pos, club: club, value: value, label: label, desc: posDescs[pos] });
   }
   return squad;
@@ -747,8 +764,8 @@ async function showTeamDetail(id) {
   for (var si = 0; si < squad.length && si < 23; si++) {
     var sp = squad[si];
     var valDisplay = sp.value >= 100 ? Math.round(sp.value/100) + '\u4E07\u20AC' : sp.value + '\u4E07\u20AC';
-    var bgColor = sp.label === '棣栧彂' ? 'rgba(0,200,83,0.15)' : 'rgba(136,146,164,0.15)';
-    var textColor = sp.label === '棣栧彂' ? '#00c853' : '#8892a4';
+    var bgColor = sp.label === '首发' ? 'rgba(0,200,83,0.15)' : 'rgba(136,146,164,0.15)';
+    var textColor = sp.label === '首发' ? '#00c853' : '#8892a4';
     html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">' +
       '<td style="padding:4px;text-align:center;color:#8892a4">' + sp.number + '</td>' +
       '<td style="padding:4px">' + sp.position + '<br><span style="font-size:9px;color:#8892a4">' + sp.desc + '</span></td>' +
@@ -766,5 +783,4 @@ async function showTeamDetail(id) {
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
-
 </script></body></html>
